@@ -74,6 +74,7 @@
 					"config_save",
 					"reset_admin",
 					"repair",
+					"recover",
 					"backup",
 					"restore",
 					"restore_prepare",
@@ -81,7 +82,8 @@
 					"update_apply",
 					"config_read",
 					"config_draft_read",
-					"config_apply"
+					"config_apply",
+					"config_detach"
 				]
 			},
 			"file": {

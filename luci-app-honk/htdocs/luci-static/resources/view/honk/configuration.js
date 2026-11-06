@@ -112,7 +112,8 @@ return view.extend({
 
 		const page = E('div', { 'class': 'cbi-map honk-page' });
 		page.appendChild(E('div', { 'class': 'honk-header' }, [
-			E('h2', {}, _('Configuration'))
+			E('img', { 'class': 'honk-header-logo', 'src': L.resource('view/honk/logo.png'), 'alt': '' }),
+			E('div', { 'class': 'honk-header-text' }, [ E('h2', {}, _('Configuration')) ])
 		]));
 
 		const draftNote = E('div', { 'class': 'honk-note honk-draft-note' });
@@ -768,6 +769,10 @@ return view.extend({
 				if (status && status.legacy_draft) {
 					parts.push(E('span', {}, _('An old manual draft from a previous version is kept on disk.')));
 					parts.push(draftButton(_('Load old draft'), 'legacy'));
+				}
+				if (status && status.detach_backup) {
+					parts.push(E('span', {}, _('The configuration from before the switch is kept on disk.')));
+					parts.push(draftButton(_('Load the previous configuration'), 'predetach'));
 				}
 				draftNote.textContent = '';
 				if (!parts.length) {

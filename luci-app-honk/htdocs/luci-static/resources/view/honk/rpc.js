@@ -68,7 +68,9 @@ const callLanCandidates = rpc.declare({ object: 'honk', method: 'lan_candidates'
 const callConfigValidate = rpc.declare({ object: 'honk', method: 'config_validate', params: [ 'content' ], expect: { '': {} } });
 const callConfigSave = rpc.declare({ object: 'honk', method: 'config_save', params: [ 'content' ], expect: { '': {} } });
 const callConfigApply = rpc.declare({ object: 'honk', method: 'config_apply', expect: { '': {} } });
+const callConfigDetach = rpc.declare({ object: 'honk', method: 'config_detach', params: [ 'dry_run' ], expect: { '': {} } });
 const callRepair = rpc.declare({ object: 'honk', method: 'repair', expect: { '': {} } });
+const callRecover = rpc.declare({ object: 'honk', method: 'recover', expect: { '': {} } });
 const callBackup = rpc.declare({ object: 'honk', method: 'backup', expect: { '': {} } });
 const callRestore = rpc.declare({ object: 'honk', method: 'restore', expect: { '': {} } });
 const callRestorePrepare = rpc.declare({ object: 'honk', method: 'restore_prepare', expect: { '': {} } });
@@ -335,6 +337,12 @@ function tokenMessage(token) {
 		config_validation_failed: _('The configuration did not pass static validation.'),
 		config_validation_unavailable: _('The core validator did not return a result.'),
 		config_settings_owned_by_file: _('这些设置由当前配置文件决定，请到「配置 → 编辑配置」里修改。'),
+		config_detached: _('已改由面板接管，订阅和分流规则保持不变。'),
+		config_not_file_owned: _('当前配置没有自带系统设置，不需要切换。'),
+		detach_layout_unsupported: _('配置里的 global / experimental 写法无法自动拆出，请到「配置 → 编辑配置」手动删除。'),
+		detach_validation_failed: _('拆分后的配置没有通过校验，原配置未改动。'),
+		detach_failed_rolled_back: _('切换后服务没能启动，已还原原配置。'),
+		detach_rollback_failed: _('切换失败且自动还原未完成，请到「维护」执行系统恢复。'),
 		config_valid: _('配置通过校验。'),
 		config_invalid: _('配置没有通过校验。'),
 		config_saved_pending_apply: _('Configuration saved. The running service is unchanged until you apply it.'),
@@ -346,6 +354,12 @@ function tokenMessage(token) {
 		upload_unavailable: _('A private upload location could not be prepared.'),
 		settings_write_failed: _('Could not save Honk settings.'),
 		curl_missing: _('The curl command is missing. Install the curl package and try again.'),
+		kernel_too_old: _('内核版本过低，honk 需要 Linux 6.12 及以上，请升级固件。'),
+		kernel_btf_override_invalid: _('HONK_VMLINUX_BTF 指向的 BTF 文件读不到。核心设了这个变量就只认它、不会回退默认路径，请改正路径或取消该变量。'),
+		kernel_btf_missing: _('内核缺少 BTF（/sys/kernel/btf/vmlinux 和 /usr/lib/debug/boot/vmlinux 都没有）。装 vmlinux-btf（apk add vmlinux-btf）或换用自带 BTF 的固件；自编译或快照内核需用同一份内核源码生成 BTF。'),
+		bpffs_not_mounted: _('bpffs 没有挂到 /sys/fs/bpf，请检查固件是否完整，或手工挂载后重试。'),
+		ip_full_missing: _('缺少 ip 命令，请安装 ip-full 包。'),
+		kmod_missing: _('缺少 modprobe 命令，请安装 kmod 包。'),
 		start_failed: _('Honk could not start.'),
 		stop_failed: _('Honk could not stop.'),
 		restart_failed: _('Honk could not restart.'),
@@ -367,6 +381,10 @@ function tokenMessage(token) {
 }
 
 function statusIssue(token) {
+	/* 内核模块检查会带上具体模块名，按前缀拆开再填进文案 */
+	if (typeof token === 'string' && token.indexOf('kernel_module_missing:') === 0)
+		return _('缺少内核模块 %s，请确认 kmod-sched-core / kmod-sched-bpf / kmod-veth / kmod-nft-queue 已安装。').format(token.slice('kernel_module_missing:'.length));
+
 	return tokenMessage(token) || _('Honk reported a system issue: %s').format(token);
 }
 
@@ -465,7 +483,9 @@ return baseclass.extend({
 	configValidate: callConfigValidate,
 	configSave: callConfigSave,
 	configApply: callConfigApply,
+	configDetach: callConfigDetach,
 	repair: callRepair,
+	recover: callRecover,
 	backup: callBackup,
 	restore: callRestore,
 	restorePrepare: callRestorePrepare,

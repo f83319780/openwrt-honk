@@ -5,8 +5,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=honk
-PKG_VERSION:=2026.11.03
-PKG_RELEASE:=1
+PKG_VERSION:=2026.11.06
+PKG_RELEASE:=2
 
 # Pinned honk-core revision (upstream daeuniverse/honk main), cross-compiled by
 # ci/build-core.sh. Every release run publishes its core archives under an
@@ -14,10 +14,10 @@ PKG_RELEASE:=1
 # assets behind CORE_COMMIT, so a plain feed build downloads and verifies them
 # without any generated file. A staged run may still override them through
 # honk/generated-stage.mk, which is generated and never committed.
-CORE_COMMIT:=77176ff8e8cc2b75385a7030dc376536c382574a
+CORE_COMMIT:=88d470c662e0ee7a3de3e67afc6129f67e66c1bf
 
 # Immutable source asset tag holding this pin's core archives.
-HONK_SOURCE_TAG?=source-41594075839
+HONK_SOURCE_TAG?=source-41792584995
 HONK_SOURCE_URL?=https://github.com/kenzok8/openwrt-honk/releases/download/$(HONK_SOURCE_TAG)
 
 -include $(CURDIR)/generated-stage.mk
@@ -25,9 +25,9 @@ HONK_SOURCE_URL?=https://github.com/kenzok8/openwrt-honk/releases/download/$(HON
 HONK_ASSET_X86_64?=honk-core-$(CORE_COMMIT)-x86_64.tar.gz
 HONK_ASSET_AARCH64?=honk-core-$(CORE_COMMIT)-aarch64.tar.gz
 HONK_ASSET_ARMV7?=honk-core-$(CORE_COMMIT)-armv7.tar.gz
-HONK_HASH_X86_64?=ad4801757f8b47505aa99cbdc47e4d606b8afe1a6269547d8073f68c20904a0e
-HONK_HASH_AARCH64?=91a9a9929ec32d24de3c105f2a51d83a4975913a68e1446e57c2b1faf63adce6
-HONK_HASH_ARMV7?=a5b288c677698a44cc45084baf0bb67b1fb2b9ca624744a08d7a469093fc9870
+HONK_HASH_X86_64?=5a389e97296f6b5d3aad5a7180a57f9669845f6baa9b52742295de23147ac07e
+HONK_HASH_AARCH64?=7261ed6b98b13fa3f7246175b5d9222feecdb3cdf3946b7c0bc296641866b345
+HONK_HASH_ARMV7?=1333e0598a493183af58e516173c66b44e692223949247cd32e53934dcebfeb4
 
 # ARCH_PACKAGES is the package arch (e.g. arm_cortex-a7_neon-vfpv4);
 # ARCH is the CPU arch (x86_64/aarch64/arm) and coincides for 64-bit.
@@ -61,7 +61,9 @@ define Package/honk
   TITLE:=Honk transparent proxy core
   URL:=https://github.com/daeuniverse/honk
   # 不直接依赖 libubox：包名带 ABI 日期戳，会锁死固件；脚本只用 jshn 提供的 jshn.sh。
-  DEPENDS:=@(x86_64||aarch64||arm) +ca-bundle +ip-full +ubus +kmod-sched-core +kmod-sched-bpf +kmod-veth +kmod-nft-queue +jsonfilter +jshn +sqlite3-cli +usign +coreutils-stat +v2ray-geoip +v2ray-geosite +@KERNEL_DEBUG_INFO_BTF
+  # 不绑 @KERNEL_DEBUG_INFO_BTF：固件没编 BTF 时还有 vmlinux-btf 包这条活路，
+  # 绑上去会让官方 OpenWrt 直接装不了，启动时由控制脚本给出明确报错。
+  DEPENDS:=@(x86_64||aarch64||arm) +ca-bundle +ip-full +ubus +kmod-sched-core +kmod-sched-bpf +kmod-veth +kmod-nft-queue +jsonfilter +jshn +sqlite3-cli +usign +coreutils-stat +v2ray-geoip +v2ray-geosite
 endef
 
 define Package/honk/description
